@@ -19,7 +19,8 @@ Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 |:--------------------|:--------:|:-------:|:------------|
 | access_token        | True     | None    | The token to authenticate against the API service |
 | api_version         | False    | v16.0   | The API version to request data from. |
-| account_id          | True     | None    | Your Facebook Account ID. |
+| account_id          | False    | None    | Your Facebook Account ID. |
+| account_ids         | False    | None    | Comma separated list of Facebook Account IDs. |
 | start_date          | False    | None    | The earliest record date to sync |
 | end_date            | False    | None    | The latest record date to sync |
 | stream_maps         | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
@@ -37,6 +38,17 @@ pipx install git+https://github.com/MeltanoLabs/tap-facebook.git
 ```
 
 ## Configuration
+
+
+### Account Ids
+
+By default, this tap will fetch the selected streams for **all** Facebook account ids accessible with your authenticated credentials.
+
+You can limit this by specifying one of two config flags:
+
+1. `account_id`: The id for the account you wish to sync.
+2. `account_ids` A comma separated string of all the accounts you want to sync.
+
 
 ### Meltano Variables
 

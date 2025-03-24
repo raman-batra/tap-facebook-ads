@@ -12,7 +12,7 @@ from singer_sdk.typing import (
     StringType,
 )
 
-from tap_facebook.client import IncrementalFacebookStream
+from tap_facebook.streams.base_streams import IncrementalFacebookStream
 
 
 class AdsStream(IncrementalFacebookStream):

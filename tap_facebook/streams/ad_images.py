@@ -13,9 +13,10 @@ from singer_sdk.typing import (
 )
 
 from tap_facebook.client import FacebookStream
+from tap_facebook.streams.base_streams import AccountLevelStream
 
 
-class AdImages(FacebookStream):
+class AdImages(AccountLevelStream):
     """https://developers.facebook.com/docs/marketing-api/reference/ad-image/."""
 
     """

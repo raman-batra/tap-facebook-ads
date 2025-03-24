@@ -35,7 +35,10 @@ class AdAccountsStream(FacebookStream):
         version = self.config.get("api_version", "")
         return f"https://graph.facebook.com/{version}/me"
 
-    columns = [  # noqa: RUF012
+
+    @property
+    def columns(self) -> list[str]:
+        columns = [
         "account_id",
         "business_name",
         "account_status",
@@ -116,10 +119,17 @@ class AdAccountsStream(FacebookStream):
         "salesforce_invoice_group_id",
         "business_zip",
         "tax_id",
-    ]
+        ]
+            
+        # Owner field throws 403 if queried without permission
+        # Only sync if explicitly selected
+        if self.mask.get(('properties', 'owner')) == False:
+            columns = [col for col in columns if col != "owner"]
+
+        return columns
 
     name = "adaccounts"
-    path = f"/adaccounts?fields={columns}"
+    path = "/adaccounts"
     tap_stream_id = "adaccounts"
     primary_keys = ["created_time"]  # noqa: RUF012
     replication_key = "created_time"
@@ -227,6 +237,13 @@ class AdAccountsStream(FacebookStream):
         row["spend_cap"] = int(row["spend_cap"]) if "spend_cap" in row else None
         return row
 
+    def get_records(self, context):
+        if self.selected == False and self.configured_account_ids:
+            for account_id in self.configured_account_ids:
+                yield {"account_id": account_id}
+        else:
+            yield from super().get_records(context)
+
     def get_url_params(
         self,
         context: dict | None,  # noqa: ARG002
@@ -244,5 +261,32 @@ class AdAccountsStream(FacebookStream):
         params: dict = {"limit": 25}
         if next_page_token is not None:
             params["after"] = next_page_token
-
+        
+        params["fields"] = f"{self.columns}"
+        
         return params
+
+
+    def get_child_context(self, record, context):
+        return {"account_id": record["account_id"]}
+    
+
+    def _sync_children(self, child_context: dict | None) -> None:
+        if not child_context:
+            return
+        
+        if self.configured_account_ids and child_context["account_id"] not in self.configured_account_ids:
+            return
+        
+        super()._sync_children(child_context)
+
+
+    @property
+    def configured_account_ids(self) -> list[str]:
+        acct_ids = []
+        if self.config.get("account_id"):
+            acct_ids.append(self.config.get("account_id"))
+        if self.config.get("account_ids"):
+            acct_ids.extend([id.strip() for id in self.config.get("account_ids").split(",")])
+        acct_ids = [id.replace("act_", "") for id in acct_ids]
+        return acct_ids

@@ -14,10 +14,10 @@ from singer_sdk.typing import (
     StringType,
 )
 
-from tap_facebook.client import FacebookStream
+from tap_facebook.streams.base_streams import AccountLevelStream
 
 
-class CustomAudiences(FacebookStream):
+class CustomAudiences(AccountLevelStream):
     """https://developers.facebook.com/docs/marketing-api/reference/custom-audience/."""
 
     """

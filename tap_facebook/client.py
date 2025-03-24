@@ -26,8 +26,7 @@ class FacebookStream(RESTStream):
     @property
     def url_base(self) -> str:
         version: str = self.config["api_version"]
-        account_id: str = self.config["account_id"]
-        return f"https://graph.facebook.com/{version}/act_{account_id}"
+        return f"https://graph.facebook.com/{version}"
 
     records_jsonpath = "$.data[*]"  # Or override `parse_response`.
     next_page_token_jsonpath = "$.paging.cursors.after"  # noqa: S105
@@ -142,37 +141,3 @@ class FacebookStream(RESTStream):
         """
         return 20
 
-
-class IncrementalFacebookStream(FacebookStream):
-    def get_url_params(
-        self,
-        context: dict | None,
-        next_page_token: t.Any | None,  # noqa: ANN401
-    ) -> dict[str, t.Any]:
-        """Return a dictionary of values to be used in URL parameterization.
-
-        Args:
-            context: The stream context.
-            next_page_token: The next page index or value.
-
-        Returns:
-            A dictionary of URL query parameters.
-        """
-        params: dict = {"limit": 25}
-        if next_page_token is not None:
-            params["after"] = next_page_token
-        if self.replication_key:
-            params["sort"] = "asc"
-            params["order_by"] = self.replication_key
-            ts = pendulum.parse(self.get_starting_replication_key_value(context))
-            params["filtering"] = json.dumps(
-                [
-                    {
-                        "field": f"{self.filter_entity}.{self.replication_key}",
-                        "operator": "GREATER_THAN",
-                        "value": int(ts.timestamp()),
-                    },
-                ],
-            )
-
-        return params

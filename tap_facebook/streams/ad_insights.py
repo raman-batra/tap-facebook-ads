@@ -19,6 +19,7 @@ from facebook_business.adobjects.adsinsights import AdsInsights
 from facebook_business.api import FacebookAdsApi
 from singer_sdk import typing as th
 from singer_sdk.streams.core import REPLICATION_INCREMENTAL, Stream
+from tap_facebook.streams.base_streams import AdAccountsStream
 
 
 
@@ -53,6 +54,7 @@ class AdsInsightStream(Stream):
     name = "adsinsights"
     replication_method = REPLICATION_INCREMENTAL
     replication_key = "date_start"
+    parent_stream_type = AdAccountsStream
 
     def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
         """Initialize the stream."""
@@ -113,15 +115,13 @@ class AdsInsightStream(Stream):
             properties.append(th.Property(breakdown, th.StringType()))
         return th.PropertiesList(*properties).to_dict()
 
-    def _initialize_client(self) -> None:
+    def _initialize_client(self, account_id) -> None:
         FacebookAdsApi.init(
             access_token=self.config["access_token"],
             timeout=300,
             api_version=self.config["api_version"],
         )
         fb_user.User(fbid="me")
-
-        account_id = self.config["account_id"]
         self.account:AdAccount = AdAccount(f"act_{account_id}").api_get()
         if not self.account:
             msg = f"Couldn't find account with id {account_id}"
@@ -182,7 +182,10 @@ class AdsInsightStream(Stream):
         self,
         context: dict | None,
     ) -> t.Iterable[dict | tuple[dict, dict | None]]:
-        self._initialize_client()
+        account_id = context.get("account_id")
+        if not account_id:
+            raise RuntimeError("Account ID not found in context.")
+        self._initialize_client(account_id)
 
         time_increment = self._report_definition["time_increment_days"]
 
@@ -222,13 +225,13 @@ class AdsInsightStream(Stream):
                 }
                 batch_requests.append({
                     "method": "GET",
-                    "relative_url": f"act_{self.config['account_id']}/insights?{urlencode(batch_params)}",
+                    "relative_url": f"act_{account_id}/insights?{urlencode(batch_params)}",
                 })
                 report_start = report_start.add(days=time_increment)
                 batch_final_dates.append(report_start)
             # Execute the batch
             api:FacebookAdsApi = FacebookAdsApi.get_default_api()
-            self.check_limit()
+            self.check_limit(account_id)
             batch_response = api.call("POST", ["/"], params={"batch": json.dumps(batch_requests)})
 
             # Process batch responses
@@ -265,7 +268,7 @@ class AdsInsightStream(Stream):
             return 0
 
     #Function to check how close you are to the FB Rate Limit
-    def get_limit(self)->float:
+    def get_limit(self, account_id)->float:
         """
         This function makes a GET request to the Facebook Graph API to retrieve
         the usage limit for the Ads Insights endpoint and returns the maximum
@@ -280,7 +283,7 @@ class AdsInsightStream(Stream):
                 'https://graph.facebook.com/' +
                 self.config["api_version"] +
                 '/act_' +
-                self.config["account_id"] +
+                account_id +
                 '/insights?access_token=' +
                 self.config["access_token"]
             )
@@ -316,9 +319,9 @@ class AdsInsightStream(Stream):
             self.logger.error(f"ValueError: {e} - Unable to convert usage data to float.")
             return 0.0  # Default value if conversion fails
 
-    def check_limit(self) -> None:
+    def check_limit(self, account_id) -> None:
         #Check if you reached 75% of the limit, if yes then back-off for 5 minutes
-        if (self.get_limit()>USAGE_LIMIT_THRESHOLD):
+        if (self.get_limit(account_id)>USAGE_LIMIT_THRESHOLD):
             #After threshold is reached start throttling all consecutive requests until the limit is reset.
             self.logger.warning(f"{USAGE_LIMIT_THRESHOLD}% Rate Limit Reached. Cooling Time 5 Minutes.")
             time.sleep(300)

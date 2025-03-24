@@ -70,12 +70,6 @@ class TapFacebook(Tap):
             default="v21.0",
         ),
         th.Property(
-            "account_id",
-            th.StringType,
-            description="Your Facebook Account ID.",
-            required=True,
-        ),
-        th.Property(
             "insight_reports_list",
             th.ArrayType(
                 th.ObjectType(
