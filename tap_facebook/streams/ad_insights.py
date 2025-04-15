@@ -12,7 +12,6 @@ import facebook_business.adobjects.user as fb_user
 import pendulum
 import requests as rq
 from facebook_business.adobjects.adaccount import AdAccount
-from facebook_business.adobjects.adreportrun import AdReportRun
 from facebook_business.adobjects.adsactionstats import AdsActionStats
 from facebook_business.adobjects.adshistogramstats import AdsHistogramStats
 from facebook_business.adobjects.adsinsights import AdsInsights
@@ -42,6 +41,9 @@ COLUMN_LIST = [
     "reach",
     "spend",
     "updated_time",
+    "actions",
+    "action_values",
+    "conversion_values"
 ]
 
 SLEEP_TIME_INCREMENT = 5
