@@ -261,6 +261,16 @@ class AdsInsightStream(Stream):
                     time.sleep(sleep_time)
                     sleep_time *= 2  # Exponential backoff.
                     attempt += 1
+                elif resp.get("code") == 400 and "too many calls" in resp.get("body", ""):
+                    self.logger.warning(
+                        "Rate Limit Reached on individual request. Cooling for %s seconds. Attempt %s/%s",
+                        sleep_time,
+                        attempt + 1,
+                        BACKOFF_MAX_RETRIES,
+                    )
+                    time.sleep(sleep_time)
+                    sleep_time *= 2  # Exponential backoff.
+                    attempt += 1
                 else:
                     raise RuntimeError(f"Individual request failed with non-retryable error: {resp}")
             except Exception as e:
@@ -360,6 +370,13 @@ class AdsInsightStream(Stream):
                     elif response.get("code") == 500:
                         self.logger.warning(
                             "Batch request for date %s failed with 500 error. Retrying individual request.",
+                            final_date.to_date_string(),
+                        )
+                        response = self._execute_single_request_with_retries(api, batch_request)
+                        data = json.loads(response["body"])
+                    elif response.get("code") == 400 and "too many calls" in response.get("body", ""):
+                        self.logger.warning(
+                            "Batch request for date %s failed due to rate limiting. Retrying individual request.",
                             final_date.to_date_string(),
                         )
                         response = self._execute_single_request_with_retries(api, batch_request)
