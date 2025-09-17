@@ -31,8 +31,6 @@ class IncrementalFacebookStream(AccountLevelStream):
         if next_page_token is not None:
             params["after"] = next_page_token
         if self.replication_key:
-            params["sort"] = "asc"
-            params["order_by"] = self.replication_key
             ts = pendulum.parse(self.get_starting_replication_key_value(context))
             params["filtering"] = json.dumps(
                 [
