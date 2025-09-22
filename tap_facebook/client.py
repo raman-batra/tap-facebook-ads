@@ -119,7 +119,8 @@ class FacebookStream(RESTStream):
             ):
                 raise RetriableAPIError(msg, response)
 
-            raise FatalAPIError(msg)
+            self.logger.warning(f"Skipping request due to client error: {msg}")
+            return
 
         if response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
             msg = (
@@ -137,4 +138,3 @@ class FacebookStream(RESTStream):
             int: limit
         """
         return 20
-

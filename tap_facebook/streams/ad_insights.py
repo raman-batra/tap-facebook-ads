@@ -382,7 +382,8 @@ class AdsInsightStream(Stream):
                         response = self._execute_single_request_with_retries(api, batch_request)
                         data = json.loads(response["body"])
                     else:
-                        raise RuntimeError(f"Batch request failed: {response}")
+                        self.logger.warning(f"Batch request failed and will be skipped: {response}")
+                        data = {}
                 if data.get("data") and len(data["data"]) > 0:
                     self.logger.info(
                         "%s records fetched for %s",
