@@ -58,10 +58,15 @@ class TapFacebook(Tap):
     # add parameters you have in config.json
     config_jsonschema = th.PropertiesList(
         th.Property(
-            "access_token",
-            th.StringType,
-            description="The token to authenticate against the API service",
-            required=True,
+            "locations",
+            th.ArrayType(
+                th.ObjectType(
+                    th.Property("id", th.StringType, required=True),
+                    th.Property("name", th.StringType, required=False),
+                )
+            ),
+            description="List of location objects, each with an 'id' (required) and optional 'name'.",
+            default=[],
         ),
         th.Property(
             "api_version",

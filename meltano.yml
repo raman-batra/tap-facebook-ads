@@ -20,8 +20,8 @@ plugins:
     - name: end_date
       value: '2023-03-31T00:00:00Z'
       kind: date_iso8601
-    - name: account_id
-      kind: string
+    - name: locations
+      kind: array
     - name: api_version
       value: 'v16.0'
     config:

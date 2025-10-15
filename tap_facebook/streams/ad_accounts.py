@@ -32,7 +32,7 @@ class AdAccountsStream(FacebookStream):
 
     @property
     def url_base(self) -> str:
-        version = self.config.get("api_version", "")
+        version = self.config.get("api_version") or "v21.0"
         return f"https://graph.facebook.com/{version}/me"
 
 
@@ -231,8 +231,8 @@ class AdAccountsStream(FacebookStream):
         return row
 
     def get_records(self, context):
-        if self.selected == False and self.configured_account_ids:
-            for account_id in self.configured_account_ids:
+        if self.selected == False and self.configured_location_ids:
+            for account_id in self.configured_location_ids:
                 yield {"account_id": account_id}
         else:
             yield from super().get_records(context)
@@ -268,18 +268,27 @@ class AdAccountsStream(FacebookStream):
         if not child_context:
             return
         
-        if self.configured_account_ids and child_context["account_id"] not in self.configured_account_ids:
+        if self.configured_location_ids and child_context["account_id"] not in self.configured_location_ids:
             return
         
         super()._sync_children(child_context)
 
 
     @property
-    def configured_account_ids(self) -> list[str]:
-        acct_ids = []
-        if self.config.get("account_id"):
-            acct_ids.append(self.config.get("account_id"))
-        if self.config.get("account_ids"):
-            acct_ids.extend([id.strip() for id in self.config.get("account_ids").split(",")])
-        acct_ids = [id.replace("act_", "") for id in acct_ids]
-        return acct_ids
+    def configured_location_ids(self) -> list[str]:
+        location_ids = []
+        locations_config = self.config.get("locations")
+        if locations_config:
+            # Support new format: list of dicts with "id" (and optional "name")
+            if isinstance(locations_config, list):
+                for entry in locations_config:
+                    if isinstance(entry, dict) and "id" in entry:
+                        location_ids.append(entry["id"])
+                    elif isinstance(entry, str):
+                        # fallback: treat as id string
+                        location_ids.append(entry)
+            elif isinstance(locations_config, str):
+                # Support old format: comma-separated string
+                location_ids.extend([id.strip() for id in locations_config.split(",")])
+        location_ids = [id.replace("act_", "") for id in location_ids]
+        return location_ids

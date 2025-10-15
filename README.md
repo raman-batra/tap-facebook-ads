@@ -19,8 +19,7 @@ Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 |:--------------------|:--------:|:-------:|:------------|
 | access_token        | True     | None    | The token to authenticate against the API service |
 | api_version         | False    | v16.0   | The API version to request data from. |
-| account_id          | False    | None    | Your Facebook Account ID. |
-| account_ids         | False    | None    | Comma separated list of Facebook Account IDs. |
+| locations           | False    | None    | List of location objects, each with an 'id' (required) and optional 'name'. |
 | start_date          | False    | None    | The earliest record date to sync |
 | end_date            | False    | None    | The latest record date to sync |
 | stream_maps         | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
@@ -40,15 +39,19 @@ pipx install git+https://github.com/MeltanoLabs/tap-facebook.git
 ## Configuration
 
 
-### Account Ids
+### Locations
 
-By default, this tap will fetch the selected streams for **all** Facebook account ids accessible with your authenticated credentials.
+By default, this tap will fetch the selected streams for **all** Facebook locations accessible with your authenticated credentials.
 
-You can limit this by specifying one of two config flags:
+You can limit this by specifying the `locations` config flag as a list of objects:
 
-1. `account_id`: The id for the account you wish to sync.
-2. `account_ids` A comma separated string of all the accounts you want to sync.
-
+```json
+"locations": [
+  { "id": "id_1", "name": "Account Name 1" },
+  { "id": "id_2" }
+]
+```
+Only the `id` field is used; `name` is optional and ignored by the tap.
 
 ### Meltano Variables
 
@@ -58,7 +61,7 @@ The following config values need to be set in order to use with Meltano. These c
 - `access_token:` access token from TAP_FACEBOOK_ACCESS_TOKEN variable
 - `start_date:` start date
 - `end_date:` end_date
-- `account_id:` account ID from TAP_FACEBOOK_ACCOUNT_ID variable
+- `locations:` list of location objects, e.g. `[{"id": "id_1"}, {"id": "id_2"}]`
 - `api_version:` api version
 
 ```bash
